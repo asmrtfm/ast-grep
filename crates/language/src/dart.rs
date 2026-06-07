@@ -11,8 +11,11 @@ use ast_grep_core::tree_sitter::{LanguageExt, StrDoc, TSLanguage};
 #[derive(Clone, Copy, Debug)]
 pub struct Dart;
 
-const WRAPPER_PREFIX: &str = "void _() {\n";
-const WRAPPER_SUFFIX: &str = "\n}";
+const FN_WRAPPER_PREFIX: &str = "void _() {\n";
+const FN_WRAPPER_SUFFIX: &str = "\n}";
+
+const CLASS_WRAPPER_PREFIX: &str = "class _W_ {\n";
+const CLASS_WRAPPER_SUFFIX: &str = "\n}";
 
 impl Language for Dart {
   fn kind_to_id(&self, kind: &str) -> u16 {
@@ -46,6 +49,9 @@ const DART_STATEMENT_KEYWORDS: &[&str] = &[
   "if", "else", "for", "while", "do", "switch", "try", "throw", "rethrow", "return", "break",
   "continue", "yield", "await", "assert",
 ];
+
+/// Keywords that only appear on class members, not inside function bodies.
+const DART_CLASS_MEMBER_KEYWORDS: &[&str] = &["static", "covariant", "external", "abstract"];
 
 impl Dart {
   /// Decides whether the direct (top-level) parse is likely wrong and
@@ -85,24 +91,72 @@ impl Dart {
     node.children().any(|c| Self::subtree_has_missing(&c))
   }
 
-  /// Wraps `src` inside a function body and tries to extract the inner
-  /// statement or expression as a pattern. Tries without a trailing semicolon
-  /// first (for compound statements like if/for/while), then with one (for
-  /// expression statements like function calls and assignments).
-  fn try_wrapped_pattern(&self, src: &str) -> Option<Pattern> {
-    // Try without semicolon first (statement patterns like if/for/while),
-    // then with semicolon (expression patterns that need `;` to form a
-    // complete statement in Dart).
-    let candidates = [
-      format!("{WRAPPER_PREFIX}{src}{WRAPPER_SUFFIX}"),
-      format!("{WRAPPER_PREFIX}{src};{WRAPPER_SUFFIX}"),
-    ];
-    for wrapped in &candidates {
-      if let Some(pattern) = self.try_extract_inner(wrapped) {
-        return Some(pattern);
-      }
+  /// Returns true if any node in the subtree is an ERROR node.
+  fn subtree_has_error<D: ast_grep_core::Doc>(node: &ast_grep_core::Node<'_, D>) -> bool {
+    if node.is_error() {
+      return true;
     }
-    None
+    node.children().any(|c| Self::subtree_has_error(&c))
+  }
+
+  /// Wraps `src` in a function body or class body and extracts the inner
+  /// pattern node. Patterns starting with class-member keywords (e.g.
+  /// `static`) try class-body wrapping first since they are invalid inside
+  /// function bodies. All other patterns try function-body wrapping first.
+  fn try_wrapped_pattern(&self, src: &str) -> Option<Pattern> {
+    let first_word = src
+      .split(|c: char| !c.is_alphanumeric() && c != '_')
+      .next()
+      .unwrap_or("");
+    let class_first = DART_CLASS_MEMBER_KEYWORDS.contains(&first_word);
+    if class_first {
+      if let Some(p) = self.try_class_wrapped(src) {
+        return Some(p);
+      }
+      return self.try_fn_wrapped(src);
+    }
+    if let Some(p) = self.try_fn_wrapped(src) {
+      return Some(p);
+    }
+    self.try_class_wrapped(src)
+  }
+
+  fn try_fn_wrapped(&self, src: &str) -> Option<Pattern> {
+    let candidates = [
+      format!("{FN_WRAPPER_PREFIX}{src}{FN_WRAPPER_SUFFIX}"),
+      format!("{FN_WRAPPER_PREFIX}{src};{FN_WRAPPER_SUFFIX}"),
+    ];
+    candidates.iter().find_map(|w| self.try_extract_inner(w))
+  }
+
+  fn try_class_wrapped(&self, src: &str) -> Option<Pattern> {
+    let candidates = [
+      format!("{CLASS_WRAPPER_PREFIX}{src};{CLASS_WRAPPER_SUFFIX}"),
+      format!("{CLASS_WRAPPER_PREFIX}{src}{CLASS_WRAPPER_SUFFIX}"),
+    ];
+    candidates
+      .iter()
+      .find_map(|w| self.try_extract_class_member(w))
+  }
+
+  /// Parses the class-wrapped source and extracts the `declaration` node
+  /// from the first class member. Returns `None` if the parse has errors
+  /// or no declaration is found.
+  fn try_extract_class_member(&self, wrapped: &str) -> Option<Pattern> {
+    let doc = StrDoc::try_new(wrapped, *self).ok()?;
+    let root = Root::doc(doc);
+    let root_node = root.root();
+    let class_body_kind = KindMatcher::new("class_body", *self);
+    let class_body = root_node.find(&class_body_kind)?;
+    if Self::subtree_has_error(&class_body) {
+      return None;
+    }
+    if Self::subtree_has_missing(&class_body) {
+      return None;
+    }
+    let decl_kind = KindMatcher::new("declaration", *self);
+    let decl = class_body.find(&decl_kind)?;
+    Some(Pattern::from(decl.get_node().clone()))
   }
 
   /// Parses the wrapped source, locates the wrapper function's block, and
@@ -287,6 +341,18 @@ mod test {
     test_match(
       "if ($COND) { $$$BODY }",
       "void f() { if (x > 0) { print(x); } }",
+    );
+  }
+
+  #[test]
+  fn test_dart_class_field_declaration() {
+    test_match(
+      "static String $FIELD = $VALUE",
+      "class Foo { static String bar = \"hello\"; }",
+    );
+    test_match(
+      "static final String $FIELD = $VALUE",
+      "class Foo { static final String bar = \"hello\"; }",
     );
   }
 
