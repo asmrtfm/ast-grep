@@ -22,6 +22,7 @@ mod bash;
 mod cpp;
 mod csharp;
 mod css;
+mod crystal;
 mod dart;
 pub use dart::Dart;
 mod elixir;
@@ -206,6 +207,9 @@ impl_lang_expando!(Cpp, language_cpp, '𐀀');
 // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/lexical-structure#643-identifiers
 // all letter number is accepted
 // https://www.compart.com/en/unicode/category/Nl
+// Crystal uses $ for global variables, so we need expando replacement.
+// Crystal identifiers accept Unicode letters.
+impl_lang_expando!(Crystal, language_crystal, 'µ');
 impl_lang_expando!(CSharp, language_c_sharp, 'µ');
 // https://www.w3.org/TR/CSS21/grammar.html#scanner
 impl_lang_expando!(Css, language_css, '_');
@@ -263,6 +267,7 @@ pub enum SupportLang {
   C,
   Cpp,
   CSharp,
+  Crystal,
   Css,
   Dart,
   Go,
@@ -293,7 +298,7 @@ impl SupportLang {
   pub const fn all_langs() -> &'static [SupportLang] {
     use SupportLang::*;
     &[
-      Bash, C, Cpp, CSharp, Css, Dart, Elixir, Go, Haskell, Hcl, Html, Java, JavaScript, Json,
+      Bash, C, Cpp, CSharp, Crystal, Css, Dart, Elixir, Go, Haskell, Hcl, Html, Java, JavaScript, Json,
       Kotlin, Lua, Markdown, Nix, Php, Python, Ruby, Rust, Scala, Solidity, Swift, Tsx, TypeScript,
       Yaml,
     ]
@@ -380,6 +385,7 @@ impl_aliases! {
   C => &["c"],
   Cpp => &["cc", "c++", "cpp", "cxx"],
   CSharp => &["cs", "csharp"],
+  Crystal => &["crystal", "cr"],
   Css => &["css"],
   Dart => &["dart"],
   Elixir => &["ex", "elixir"],
@@ -429,6 +435,7 @@ macro_rules! execute_lang_method {
       S::C => C.$method($($pname,)*),
       S::Cpp => Cpp.$method($($pname,)*),
       S::CSharp => CSharp.$method($($pname,)*),
+      S::Crystal => Crystal.$method($($pname,)*),
       S::Css => Css.$method($($pname,)*),
       S::Dart => Dart.$method($($pname,)*),
       S::Elixir => Elixir.$method($($pname,)*),
@@ -503,6 +510,7 @@ fn extensions(lang: SupportLang) -> &'static [&'static str] {
     C => &["c", "h"],
     Cpp => &["cc", "hpp", "cpp", "c++", "hh", "cxx", "cu", "ino"],
     CSharp => &["cs"],
+    Crystal => &["cr"],
     Css => &["css", "scss"],
     Dart => &["dart"],
     Elixir => &["ex", "exs"],
