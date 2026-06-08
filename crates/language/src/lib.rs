@@ -23,6 +23,7 @@ mod cpp;
 mod csharp;
 mod css;
 mod crystal;
+pub use crystal::Crystal;
 mod dart;
 pub use dart::Dart;
 mod elixir;
@@ -92,7 +93,7 @@ macro_rules! impl_lang {
   };
 }
 
-fn pre_process_pattern(expando: char, query: &str) -> std::borrow::Cow<'_, str> {
+pub(crate) fn pre_process_pattern(expando: char, query: &str) -> std::borrow::Cow<'_, str> {
   let mut ret = Vec::with_capacity(query.len());
   let mut dollar_count = 0;
   for c in query.chars() {
@@ -207,9 +208,9 @@ impl_lang_expando!(Cpp, language_cpp, '𐀀');
 // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/lexical-structure#643-identifiers
 // all letter number is accepted
 // https://www.compart.com/en/unicode/category/Nl
-// Crystal uses $ for global variables, so we need expando replacement.
-// Crystal identifiers accept Unicode letters.
-impl_lang_expando!(Crystal, language_crystal, 'µ');
+// Crystal has a custom Language impl in crystal.rs — its grammar has two
+// identifier classes (lowercase identifiers, uppercase constants) that
+// require a dual-expando fallback for metavar patterns.
 impl_lang_expando!(CSharp, language_c_sharp, 'µ');
 // https://www.w3.org/TR/CSS21/grammar.html#scanner
 impl_lang_expando!(Css, language_css, '_');

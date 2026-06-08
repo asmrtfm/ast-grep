@@ -263,7 +263,16 @@ pub enum PatternError {
 #[inline]
 fn is_single_node<'r, N: SgNode<'r>>(n: &N) -> bool {
   match n.children().len() {
-    1 => true,
+    1 => {
+      let c = n.child(0).expect("child must exist");
+      let parent_len = n.range().len();
+      let child_len = c.range().len();
+      // Don't peel when the child covers substantially less text than
+      // the parent. Hidden token() rules can absorb text into the
+      // parent without creating child nodes, leaving a single visible
+      // child (e.g. "::") that is only a fraction of the parent's span.
+      parent_len == 0 || child_len * 2 >= parent_len
+    }
     2 => {
       let c = n.child(1).expect("second child must exist");
       // some language will have weird empty syntax node at the end

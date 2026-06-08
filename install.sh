@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-[[ "${1,,}" != *(\-)@(b)?(uild) ]] || { cat <<EOL
+[[ "${1,,}" != *(\-)@(h)?(elp) ]] || { cat <<EOL
 USAGE
         ./install [ -b|--build ]
 
