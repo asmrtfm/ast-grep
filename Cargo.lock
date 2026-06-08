@@ -2137,7 +2137,7 @@ dependencies = [
 [[package]]
 name = "tree-sitter-crystal"
 version = "0.0.1"
-source = "git+https://github.com/crystal-lang-tools/tree-sitter-crystal.git#50ca9e6fcfb16a2cbcad59203cfd8ad650e25c49"
+source = "git+https://github.com/asmrtfm/tree-sitter-crystal.git#ad9da6607a05b11851faf261d7c4830cdb96c986"
 dependencies = [
  "cc",
  "tree-sitter-language",
