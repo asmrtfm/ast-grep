@@ -254,6 +254,18 @@ init_main() {
 
     bash "$DISCOVER_ROOT/generate.sh" "${gen_args[@]}"
 
+    # Generate test-discover.sh into the project's script directory
+    local test_template="$DISCOVER_ROOT/test-discover.sh.template"
+    if [ -f "$test_template" ]; then
+        sed \
+            -e "s|{{SCRIPT_DIR}}|${script_rel}|g" \
+            -e "s|{{ENTRY_POINT}}|${entry}|g" \
+            -e "s|{{SRC_DIR}}|${src_dir}|g" \
+            -e "s|{{FILE_EXT}}|${FILE_EXT}|g" \
+            "$test_template" > "$script_dir/test-discover.sh"
+        chmod +x "$script_dir/test-discover.sh"
+    fi
+
     # Render SKILL.md into .claude/skills/discover/
     local template="$DISCOVER_ROOT/SKILL.md.template"
     [ -f "$template" ] || die "SKILL.md.template not found at $DISCOVER_ROOT"
@@ -262,6 +274,7 @@ init_main() {
 
     echo "discover: ${SKILL_LANG_NAME}" >&2
     echo "  script → $script_dir/discover.sh" >&2
+    echo "  tests  → $script_dir/test-discover.sh" >&2
     echo "  skill  → $skill_dir/SKILL.md" >&2
 }
 
