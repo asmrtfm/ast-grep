@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# discover — CLI entry point for the discover framework.
+#
+# Usage:
+#   discover init <lang> [--entry <file>] [--package <name>] [--src-dir <dir>]
+#   discover langs
+#
+# This script can be run from anywhere. It locates its own source directory
+# to find lang configs, templates, and the generator.
+
+DISCOVER_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" && pwd)"
+
+die() { echo "error: $*" >&2; exit 1; }
+
+cmd_init() {
+    bash "$DISCOVER_ROOT/init.sh" "$@"
+}
+
+cmd_langs() {
+    echo "Available languages:" >&2
+    for f in "$DISCOVER_ROOT"/langs/*.sh; do
+        local lang_id
+        lang_id="$(grep -oP '^LANG_ID="\K[^"]+' "$f")"
+        local lang_name
+        lang_name="$(grep -oP '^SKILL_LANG_NAME="\K[^"]+' "$f")"
+        printf "  %-12s %s\n" "$lang_id" "${lang_name:-}"
+    done
+}
+
+subcmd="${1:-}"
+shift 2>/dev/null || true
+
+case "$subcmd" in
+    init)  cmd_init "$@" ;;
+    langs) cmd_langs ;;
+    *)
+        echo "usage: discover <command> [args]" >&2
+        echo "" >&2
+        echo "commands:" >&2
+        echo "  init <lang> [--entry <file>] [--package <name>] [--src-dir <dir>]" >&2
+        echo "      Generate discover.sh + SKILL.md in nearest .claude/skills/discover/" >&2
+        echo "  langs" >&2
+        echo "      List available language configs" >&2
+        exit 1
+        ;;
+esac
