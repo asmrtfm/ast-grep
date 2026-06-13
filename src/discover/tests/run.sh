@@ -38,9 +38,9 @@ for lang in "${langs[@]}"; do
     echo "═══════════════════════════════════════"
 
     if bash "$test_file"; then
-        ((LANGS_PASS++))
+        LANGS_PASS=$((LANGS_PASS + 1))
     else
-        ((LANGS_FAIL++))
+        LANGS_FAIL=$((LANGS_FAIL + 1))
     fi
 done
 
