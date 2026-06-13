@@ -77,28 +77,46 @@ ast_grep_imports() {
 # ─────────────────────────────────────────────────────────
 ast_grep_entities() {
     local file="$1" depth="${2:-names}"
-
-    # Swift AST node kinds and their keyword prefixes
-    local kinds="class_declaration struct_declaration enum_declaration protocol_declaration actor_declaration"
-    local keyword_map="class_declaration:class struct_declaration:struct enum_declaration:enum protocol_declaration:protocol actor_declaration:actor"
-
     local all_json="[]"
 
-    for kind in $kinds; do
-        local keyword=""
-        for pair in $keyword_map; do
-            [ "${pair%%:*}" = "$kind" ] && { keyword="${pair#*:}"; break; }
-        done
+    # Swift's tree-sitter grammar uses class_declaration for struct, enum,
+    # class, actor, and extension. We dispatch on the leading keyword.
+    local decl_raw
+    decl_raw="$(ast-grep run -l swift --kind class_declaration "$file" --json 2>/dev/null)"
+    if [ -n "$decl_raw" ] && [ "$decl_raw" != "[]" ]; then
+        local decl_extracted
+        decl_extracted="$(echo "$decl_raw" | jq --arg depth "$depth" '
+            [.[] | (.text | split("\n")[0]) as $first_line |
+                ($first_line | capture("^(?<kw>struct|enum|class|actor|extension)\\s+(?<n>\\w+)")) as $cap |
+                select($cap != null) |
+                {
+                    kind: $cap.kw,
+                    name: $cap.n,
+                    line: (.range.start.line + 1),
+                    text: (
+                        if $depth == "full" then .text
+                        elif $depth == "signatures" then $first_line
+                        else null
+                        end
+                    )
+                }
+            ]
+        ' 2>/dev/null)"
 
-        local raw
-        raw="$(ast-grep run -l swift --kind "$kind" "$file" --json 2>/dev/null)"
-        [ -n "$raw" ] && [ "$raw" != "[]" ] || continue
+        if [ -n "$decl_extracted" ] && [ "$decl_extracted" != "[]" ]; then
+            all_json="$(echo "$all_json" "$decl_extracted" | jq -s '.[0] + .[1]')"
+        fi
+    fi
 
-        local extracted
-        extracted="$(echo "$raw" | jq --arg kw "$keyword" --arg depth "$depth" '
+    # Protocols use a separate AST kind
+    local proto_raw
+    proto_raw="$(ast-grep run -l swift --kind protocol_declaration "$file" --json 2>/dev/null)"
+    if [ -n "$proto_raw" ] && [ "$proto_raw" != "[]" ]; then
+        local proto_extracted
+        proto_extracted="$(echo "$proto_raw" | jq --arg depth "$depth" '
             [.[] | {
-                kind: $kw,
-                name: (.text | split("\n")[0] | capture("(?:^|\\s)" + $kw + "\\s+(?<n>\\w+)") | .n // "?"),
+                kind: "protocol",
+                name: (.text | split("\n")[0] | capture("protocol\\s+(?<n>\\w+)") | .n // "?"),
                 line: (.range.start.line + 1),
                 text: (
                     if $depth == "full" then .text
@@ -109,11 +127,12 @@ ast_grep_entities() {
             }]
         ' 2>/dev/null)"
 
-        [ -n "$extracted" ] && [ "$extracted" != "[]" ] || continue
-        all_json="$(echo "$all_json" "$extracted" | jq -s '.[0] + .[1]')"
-    done
+        if [ -n "$proto_extracted" ] && [ "$proto_extracted" != "[]" ]; then
+            all_json="$(echo "$all_json" "$proto_extracted" | jq -s '.[0] + .[1]')"
+        fi
+    fi
 
-    # Top-level functions
+    # Top-level functions (column 0 only)
     local fn_raw
     fn_raw="$(ast-grep run -l swift --kind function_declaration "$file" --json 2>/dev/null)"
     if [ -n "$fn_raw" ] && [ "$fn_raw" != "[]" ]; then
@@ -134,30 +153,6 @@ ast_grep_entities() {
 
         if [ -n "$fn_extracted" ] && [ "$fn_extracted" != "[]" ]; then
             all_json="$(echo "$all_json" "$fn_extracted" | jq -s '.[0] + .[1]')"
-        fi
-    fi
-
-    # Extensions
-    local ext_raw
-    ext_raw="$(ast-grep run -l swift --kind extension_declaration "$file" --json 2>/dev/null)"
-    if [ -n "$ext_raw" ] && [ "$ext_raw" != "[]" ]; then
-        local ext_extracted
-        ext_extracted="$(echo "$ext_raw" | jq --arg depth "$depth" '
-            [.[] | {
-                kind: "extension",
-                name: (.text | split("\n")[0] | capture("extension\\s+(?<n>\\w+)") | .n // "?"),
-                line: (.range.start.line + 1),
-                text: (
-                    if $depth == "full" then .text
-                    elif $depth == "signatures" then (.text | split("\n")[0])
-                    else null
-                    end
-                )
-            }]
-        ' 2>/dev/null)"
-
-        if [ -n "$ext_extracted" ] && [ "$ext_extracted" != "[]" ]; then
-            all_json="$(echo "$all_json" "$ext_extracted" | jq -s '.[0] + .[1]')"
         fi
     fi
 
