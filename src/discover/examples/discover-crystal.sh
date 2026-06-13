@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # discover.sh — deterministic crystal codebase navigation using ast-grep.
 # Generated from: crystal.sh + core.sh
-# Date: 2026-06-08T21:51:07Z
+# Date: 2026-06-10T19:45:35Z
 #
 # Do not edit directly — regenerate with:
 #   bash generate.sh crystal.sh --output discover-crystal.sh
@@ -18,6 +18,22 @@ FILE_EXCLUDE_GLOBS=""
 SRC_DIR_REL="src"
 ENTRY_POINT_REL=""  # set per-project, e.g. "src/myapp.cr"
 PACKAGE_NAME=""
+
+# ─────────────────────────────────────────────────────────
+# Skill metadata — used by `discover init` to fill SKILL.md.template
+# ─────────────────────────────────────────────────────────
+SKILL_LANG_NAME="Crystal"
+SKILL_IMPORT_VERB="require"
+SKILL_MOTIVATION="Crystal's \`require\` resolves relative paths, globs, shards, and stdlib — grep can't distinguish these. A file found by grep may be in a shard you don't use, or behind a glob you've already covered. discover.sh resolves the actual require graph."
+SKILL_RESOLVE_EXAMPLE_1="./config"
+SKILL_RESOLVE_RESULT_1="src/config.cr"
+SKILL_RESOLVE_EXAMPLE_2="./models/*"
+SKILL_RESOLVE_FROM_2="src/app.cr"
+SKILL_RESOLVE_RESULT_2="src/models/user.cr src/models/post.cr"
+SKILL_EXAMPLE_FILE="src/app.cr"
+SKILL_EXAMPLE_SYMBOL="App"
+SKILL_USAGE_EXAMPLE_1='App.new($$$ARGS)'
+SKILL_USAGE_EXAMPLE_2='Log.info { $$$MSG }'
 
 # ─────────────────────────────────────────────────────────
 # Crystal has a single `require` directive
@@ -704,7 +720,9 @@ cmd_usages() {
     fi
 
     local raw
-    raw="$(ast-grep run -l "$LANG_ID" -p "$pattern" "$SRC_DIR" --json 2>/dev/null)"
+    # Scan the entire repo, not just SRC_DIR — usages can live anywhere
+    # (config/, script/, test/, spec/, etc.). --live-only filters afterward.
+    raw="$(ast-grep run -l "$LANG_ID" -p "$pattern" "$REPO_ROOT" --json 2>/dev/null)"
     [ -n "$raw" ] && [ "$raw" != "[]" ] || raw="[]"
 
     [ "$raw" != "[]" ] || { echo "[]"; echo "0 usages found" >&2; return; }

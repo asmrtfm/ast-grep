@@ -475,7 +475,9 @@ cmd_usages() {
     fi
 
     local raw
-    raw="$(ast-grep run -l "$LANG_ID" -p "$pattern" "$SRC_DIR" --json 2>/dev/null)"
+    # Scan the entire repo, not just SRC_DIR — usages can live anywhere
+    # (config/, script/, test/, spec/, etc.). --live-only filters afterward.
+    raw="$(ast-grep run -l "$LANG_ID" -p "$pattern" "$REPO_ROOT" --json 2>/dev/null)"
     [ -n "$raw" ] && [ "$raw" != "[]" ] || raw="[]"
 
     [ "$raw" != "[]" ] || { echo "[]"; echo "0 usages found" >&2; return; }

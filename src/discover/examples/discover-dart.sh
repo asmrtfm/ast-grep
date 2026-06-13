@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # discover.sh — deterministic dart codebase navigation using ast-grep.
 # Generated from: dart.sh + core.sh
-# Date: 2026-06-08T21:50:48Z
+# Date: 2026-06-10T19:45:35Z
 #
 # Do not edit directly — regenerate with:
 #   bash generate.sh dart.sh --output discover-dart.sh
@@ -18,6 +18,22 @@ FILE_EXCLUDE_GLOBS="*.g.dart *.freezed.dart"
 SRC_DIR_REL="lib"
 ENTRY_POINT_REL="lib/main.dart"
 PACKAGE_NAME=""  # set per-project, e.g. "my_app"
+
+# ─────────────────────────────────────────────────────────
+# Skill metadata — used by `discover init` to fill SKILL.md.template
+# ─────────────────────────────────────────────────────────
+SKILL_LANG_NAME="Dart"
+SKILL_IMPORT_VERB="import"
+SKILL_MOTIVATION="Dart has three linking directives (\`import\`, \`export\`, \`part\`) and two URI schemes (\`package:\`, relative). A grep hit doesn't tell you whether the file is reachable or which definition wins when names collide across barrel exports. discover.sh resolves the real import graph."
+SKILL_RESOLVE_EXAMPLE_1="package:my_app/screens/home.dart"
+SKILL_RESOLVE_RESULT_1="lib/screens/home.dart"
+SKILL_RESOLVE_EXAMPLE_2="../widgets/button.dart"
+SKILL_RESOLVE_FROM_2="lib/screens/home.dart"
+SKILL_RESOLVE_RESULT_2="lib/widgets/button.dart"
+SKILL_EXAMPLE_FILE="lib/screens/home.dart"
+SKILL_EXAMPLE_SYMBOL="HomeScreen"
+SKILL_USAGE_EXAMPLE_1='Navigator.push($$$ARGS)'
+SKILL_USAGE_EXAMPLE_2='setState(() { $$$BODY })'
 
 # ─────────────────────────────────────────────────────────
 # Dart has three directive types that link files
@@ -141,12 +157,6 @@ ast_grep_entities() {
 
     echo "$all_json" | jq 'sort_by(.line) | if .[0].text == null then [.[] | del(.text)] else . end'
 }
-
-# Override: entry point
-ENTRY_POINT_REL="lib/main.dart"
-
-# Override: package name
-PACKAGE_NAME="malsi_app"
 
 # ═══════════════════════════════════════════════════════════
 # Core engine (language-agnostic)
@@ -628,7 +638,9 @@ cmd_usages() {
     fi
 
     local raw
-    raw="$(ast-grep run -l "$LANG_ID" -p "$pattern" "$SRC_DIR" --json 2>/dev/null)"
+    # Scan the entire repo, not just SRC_DIR — usages can live anywhere
+    # (config/, script/, test/, spec/, etc.). --live-only filters afterward.
+    raw="$(ast-grep run -l "$LANG_ID" -p "$pattern" "$REPO_ROOT" --json 2>/dev/null)"
     [ -n "$raw" ] && [ "$raw" != "[]" ] || raw="[]"
 
     [ "$raw" != "[]" ] || { echo "[]"; echo "0 usages found" >&2; return; }

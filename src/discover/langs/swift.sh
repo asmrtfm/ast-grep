@@ -20,6 +20,22 @@ ENTRY_POINT_REL=""  # Swift packages don't have a single entry point; set per-pr
 PACKAGE_NAME=""
 
 # ─────────────────────────────────────────────────────────
+# Skill metadata — used by `discover init` to fill SKILL.md.template
+# ─────────────────────────────────────────────────────────
+SKILL_LANG_NAME="Swift"
+SKILL_IMPORT_VERB="import"
+SKILL_MOTIVATION="Swift's module-based imports mean all files in a target see each other — grep can't tell you which target owns a file or whether an \`import MyModule\` resolves locally. discover.sh maps the module graph and extracts entities structurally."
+SKILL_RESOLVE_EXAMPLE_1="MyModule"
+SKILL_RESOLVE_RESULT_1="Sources/MyModule/MyModule.swift"
+SKILL_RESOLVE_EXAMPLE_2="NetworkKit"
+SKILL_RESOLVE_FROM_2="Sources/App/AppDelegate.swift"
+SKILL_RESOLVE_RESULT_2="Sources/NetworkKit/Client.swift"
+SKILL_EXAMPLE_FILE="Sources/App/AppDelegate.swift"
+SKILL_EXAMPLE_SYMBOL="AppDelegate"
+SKILL_USAGE_EXAMPLE_1='URLSession.shared.$METHOD($$$ARGS)'
+SKILL_USAGE_EXAMPLE_2='guard let $VAR = $EXPR else { $$$BODY }'
+
+# ─────────────────────────────────────────────────────────
 # Swift import resolution
 #
 # `import Foundation`   → external module, unresolvable

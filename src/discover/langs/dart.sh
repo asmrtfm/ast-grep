@@ -9,6 +9,22 @@ ENTRY_POINT_REL="lib/main.dart"
 PACKAGE_NAME=""  # set per-project, e.g. "my_app"
 
 # ─────────────────────────────────────────────────────────
+# Skill metadata — used by `discover init` to fill SKILL.md.template
+# ─────────────────────────────────────────────────────────
+SKILL_LANG_NAME="Dart"
+SKILL_IMPORT_VERB="import"
+SKILL_MOTIVATION="Dart has three linking directives (\`import\`, \`export\`, \`part\`) and two URI schemes (\`package:\`, relative). A grep hit doesn't tell you whether the file is reachable or which definition wins when names collide across barrel exports. discover.sh resolves the real import graph."
+SKILL_RESOLVE_EXAMPLE_1="package:my_app/screens/home.dart"
+SKILL_RESOLVE_RESULT_1="lib/screens/home.dart"
+SKILL_RESOLVE_EXAMPLE_2="../widgets/button.dart"
+SKILL_RESOLVE_FROM_2="lib/screens/home.dart"
+SKILL_RESOLVE_RESULT_2="lib/widgets/button.dart"
+SKILL_EXAMPLE_FILE="lib/screens/home.dart"
+SKILL_EXAMPLE_SYMBOL="HomeScreen"
+SKILL_USAGE_EXAMPLE_1='Navigator.push($$$ARGS)'
+SKILL_USAGE_EXAMPLE_2='setState(() { $$$BODY })'
+
+# ─────────────────────────────────────────────────────────
 # Dart has three directive types that link files
 # ─────────────────────────────────────────────────────────
 import_directives() { echo "import export part"; }
