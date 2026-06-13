@@ -7,6 +7,10 @@ FILE_EXCLUDE_GLOBS="*.d.ts *.spec.ts *.test.ts"
 SRC_DIR_REL="src"
 ENTRY_POINT_REL=""  # set per-project, e.g. "src/index.ts"
 PACKAGE_NAME=""     # set per-project from package.json "name" field
+CTX7_LIBRARIES="typescript node.js"
+LSP_PLUGIN="typescript-lsp@claude-plugins-official"
+LSP_BINARY="typescript-language-server"
+LSP_INSTALL="npm install -g typescript-language-server typescript"
 
 # ─────────────────────────────────────────────────────────
 # Skill metadata — used by `discover init` to fill SKILL.md.template

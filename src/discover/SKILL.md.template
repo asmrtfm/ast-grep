@@ -96,6 +96,16 @@ The pattern is any valid ast-grep {{LANG_NAME}} pattern — metavariables (`$NAM
 bash {{TEST_SCRIPT_PATH}}
 ```
 
+## Documentation lookup
+
+When you need current API docs, import semantics, or framework-specific behavior for this project's language, use Context7:
+
+```bash
+{{CTX7_COMMANDS}}
+```
+
+Use this before relying on training data for {{LANG_NAME}} API details, configuration options, or version-specific behavior.
+
 ## Rules
 
 - Use `discover.sh` before claiming any symbol, file, or code path is live or dead.

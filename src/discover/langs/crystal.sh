@@ -7,6 +7,10 @@ FILE_EXCLUDE_GLOBS=""
 SRC_DIR_REL="src"
 ENTRY_POINT_REL=""  # set per-project, e.g. "src/myapp.cr"
 PACKAGE_NAME=""
+CTX7_LIBRARIES="crystal-lang"
+LSP_PLUGIN=""  # no official Claude Code plugin
+LSP_BINARY="crystalline"
+LSP_INSTALL=""  # build from source or shards
 
 # ─────────────────────────────────────────────────────────
 # Skill metadata — used by `discover init` to fill SKILL.md.template

@@ -7,6 +7,10 @@ FILE_EXCLUDE_GLOBS="*.g.dart *.freezed.dart"
 SRC_DIR_REL="lib"
 ENTRY_POINT_REL="lib/main.dart"
 PACKAGE_NAME=""  # set per-project, e.g. "my_app"
+CTX7_LIBRARIES="flutter dart"
+LSP_PLUGIN=""  # Dart uses the `dart` MCP server instead of an LSP plugin
+LSP_BINARY="dart"
+LSP_INSTALL=""  # bundled with Dart SDK
 
 # ─────────────────────────────────────────────────────────
 # Skill metadata — used by `discover init` to fill SKILL.md.template

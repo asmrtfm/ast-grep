@@ -36,6 +36,25 @@ ENTRY_POINT_REL=""
 # Set to "" if the language doesn't use package-qualified imports.
 PACKAGE_NAME=""
 
+# Context7 library search terms for this language's ecosystem.
+# Space-separated. Used in generated SKILL.md to enable doc lookups.
+# E.g. "flutter dart" for Dart, "typescript node.js" for TypeScript.
+CTX7_LIBRARIES=""
+
+# Claude Code LSP plugin ID from the official marketplace.
+# E.g. "typescript-lsp@claude-plugins-official", "ruby-lsp@claude-plugins-official".
+# Leave empty if no official plugin exists (Dart, Crystal, Bash).
+LSP_PLUGIN=""
+
+# LSP binary name to check for on PATH.
+# E.g. "typescript-language-server", "ruby-lsp", "sourcekit-lsp".
+LSP_BINARY=""
+
+# Command to install the LSP binary if not found.
+# E.g. "npm install -g typescript-language-server typescript".
+# Leave empty if bundled with the language toolchain.
+LSP_INSTALL=""
+
 # ─────────────────────────────────────────────────────────
 # REQUIRED FUNCTIONS
 # ─────────────────────────────────────────────────────────

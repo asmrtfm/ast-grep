@@ -18,6 +18,10 @@ FILE_EXCLUDE_GLOBS=""
 SRC_DIR_REL="Sources"
 ENTRY_POINT_REL=""  # Swift packages don't have a single entry point; set per-project
 PACKAGE_NAME=""
+CTX7_LIBRARIES="swift"
+LSP_PLUGIN="swift-lsp@claude-plugins-official"
+LSP_BINARY="sourcekit-lsp"
+LSP_INSTALL=""  # bundled with Swift toolchain
 
 # ─────────────────────────────────────────────────────────
 # Skill metadata — used by `discover init` to fill SKILL.md.template

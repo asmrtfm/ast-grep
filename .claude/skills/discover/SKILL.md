@@ -19,7 +19,18 @@ When the user says anything like:
 
 There are two paths depending on whether ast-grep already supports the language.
 
-### Step 0: Check ast-grep support
+### Step 0a: Set up LSP for the language
+
+Before writing any code, set up LSP support so you can verify your work structurally. Use `/lsp-setup <lang>` — it checks for a Claude Code LSP plugin, installs the binary, enables the plugin, and verifies it works on a real source file.
+
+This gives you `LSP(documentSymbol)`, `LSP(goToDefinition)`, etc. for verifying AST node kinds and entity extraction against ground truth.
+
+When filling in the lang config later, record the LSP details:
+- `LSP_PLUGIN` — the Claude Code plugin ID (e.g. `"ruby-lsp@claude-plugins-official"`) or empty if none exists
+- `LSP_BINARY` — the binary name to check on PATH
+- `LSP_INSTALL` — the install command, or empty if bundled with the toolchain
+
+### Step 0b: Check ast-grep support
 
 ```bash
 echo 'puts "hello"' > tmp/test_lang_check.<ext>
@@ -57,6 +68,27 @@ done
 
 **Do NOT guess node kind names.** Tree-sitter grammars vary wildly between languages. `method` vs `method_definition` vs `method_def` vs `function_declaration` — only testing reveals the truth.
 
+### Step 1b: Verify language semantics via Context7
+
+Before writing the lang config, use Context7 to verify the language's import/module system. Do NOT copy another language's `resolve_import` and assume the semantics transfer.
+
+```bash
+# Find the right Context7 library for the language
+npx ctx7@latest library "<lang>" "import module resolution"
+
+# Fetch docs on the specific import mechanics
+npx ctx7@latest docs "<library-id>" "how does import resolution work, relative paths, package imports"
+```
+
+Verify at minimum:
+- **Import resolution**: Does `import "foo"` mean a file, a module, a package? Are paths relative to the importing file or to a project root?
+- **Multiple directives**: Does the language have more than one linking keyword? (e.g. Dart's `import`/`export`/`part`, Ruby's `require`/`require_relative`, Crystal's `require` with globs)
+- **Package-qualified imports**: Does the language use a package prefix scheme? (e.g. Dart's `package:`, Go's module paths, TypeScript's `@/` aliases)
+- **Extension handling**: Are extensions required, optional, or forbidden in import specifiers?
+- **Glob/wildcard imports**: Does the language support importing multiple files via a pattern?
+
+Cross-check against the existing lang configs — if your new language's `resolve_import` looks suspiciously similar to another language's, that's a red flag. Every language has unique resolution rules.
+
 ### Step 2: Create the lang config
 
 Copy the template and fill it in based on what you discovered in step 1:
@@ -72,6 +104,9 @@ Required variables — see existing configs for examples:
 - `SRC_DIR_REL` — typical source directory (`lib`, `src`, `.`, etc.)
 - `ENTRY_POINT_REL` — leave empty, set per-project
 - `PACKAGE_NAME` — leave empty, set per-project
+- `LSP_PLUGIN` — Claude Code plugin ID from Step 0a (e.g. `"ruby-lsp@claude-plugins-official"`) or empty
+- `LSP_BINARY` — LSP binary name to check on PATH (e.g. `"ruby-lsp"`, `"sourcekit-lsp"`)
+- `LSP_INSTALL` — install command for the LSP binary, or empty if bundled with toolchain
 
 Required functions — **must use verified AST node kinds from step 1**:
 - `resolve_import` — resolve an import specifier to repo-relative path(s)
@@ -87,6 +122,7 @@ Skill metadata — used by `discover init` to render SKILL.md:
 - `SKILL_LANG_NAME`, `SKILL_IMPORT_VERB`, `SKILL_MOTIVATION`
 - `SKILL_RESOLVE_EXAMPLE_*`, `SKILL_EXAMPLE_FILE`, `SKILL_EXAMPLE_SYMBOL`
 - `SKILL_USAGE_EXAMPLE_1`, `SKILL_USAGE_EXAMPLE_2`
+- `CTX7_LIBRARIES` — space-separated Context7 search terms for the language's ecosystem (e.g. `"flutter dart"` for Dart, `"typescript node.js"` for TS)
 
 ### Step 3: Add auto-detection to init.sh
 

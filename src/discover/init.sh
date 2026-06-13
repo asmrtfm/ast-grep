@@ -161,6 +161,22 @@ build_inspect_flags() {
 }
 
 # ─────────────────────────────────────────────────────────
+# Build Context7 lookup commands from CTX7_LIBRARIES
+# ─────────────────────────────────────────────────────────
+build_ctx7_commands() {
+    if [ -z "${CTX7_LIBRARIES:-}" ]; then
+        echo "# No Context7 libraries configured for this language."
+        return
+    fi
+    local cmds=""
+    for lib in $CTX7_LIBRARIES; do
+        cmds+="npx ctx7@latest library \"${lib}\" \"<your question>\""$'\n'
+        cmds+="npx ctx7@latest docs \"<library-id>\" \"<your question>\""$'\n'
+    done
+    printf '%s' "${cmds%$'\n'}"
+}
+
+# ─────────────────────────────────────────────────────────
 # Render SKILL.md from template + lang metadata
 # ─────────────────────────────────────────────────────────
 render_skill_md() {
@@ -169,8 +185,12 @@ render_skill_md() {
     inspect_flags="$(build_inspect_flags)"
     local import_section
     import_section="$(inspect_sections | awk '{print $1}')"
+    local ctx7_commands
+    ctx7_commands="$(build_ctx7_commands)"
 
-    sed \
+    # Simple substitutions via sed
+    local result
+    result="$(sed \
         -e "s|{{LANG_NAME}}|${SKILL_LANG_NAME}|g" \
         -e "s|{{IMPORT_VERB}}|${SKILL_IMPORT_VERB}|g" \
         -e "s|{{MOTIVATION}}|${SKILL_MOTIVATION}|g" \
@@ -187,7 +207,17 @@ render_skill_md() {
         -e "s|{{RESOLVE_RESULT_2}}|${SKILL_RESOLVE_RESULT_2}|g" \
         -e "s|{{USAGE_EXAMPLE_1}}|${SKILL_USAGE_EXAMPLE_1}|g" \
         -e "s|{{USAGE_EXAMPLE_2}}|${SKILL_USAGE_EXAMPLE_2}|g" \
-        "$template"
+        "$template")"
+
+    # Multi-line substitution for CTX7_COMMANDS (sed can't do this cleanly)
+    local ctx7_escaped
+    ctx7_escaped="$(printf '%s' "$ctx7_commands" | sed 's/[&/\]/\\&/g')"
+    echo "$result" | awk -v replacement="$ctx7_commands" '{
+        if (index($0, "{{CTX7_COMMANDS}}")) {
+            sub(/{{CTX7_COMMANDS}}/, replacement)
+        }
+        print
+    }'
 }
 
 # ─────────────────────────────────────────────────────────
@@ -271,6 +301,25 @@ init_main() {
     [ -f "$template" ] || die "SKILL.md.template not found at $DISCOVER_ROOT"
 
     render_skill_md "$template" "$script_path" "$test_script_path" > "$skill_dir/SKILL.md"
+
+    # Configure LSP if plugin info is available
+    if [ -n "${LSP_PLUGIN:-}" ]; then
+        local settings_file="$claude_dir/settings.json"
+        if [ -f "$settings_file" ]; then
+            if ! jq -e ".enabledPlugins[\"${LSP_PLUGIN}\"]" "$settings_file" >/dev/null 2>&1; then
+                jq ".enabledPlugins[\"${LSP_PLUGIN}\"] = true" "$settings_file" > "${settings_file}.tmp" \
+                    && mv "${settings_file}.tmp" "$settings_file"
+                echo "  lsp    → enabled ${LSP_PLUGIN}" >&2
+            else
+                echo "  lsp    → ${LSP_PLUGIN} (already enabled)" >&2
+            fi
+        else
+            echo '{}' | jq "{enabledPlugins: {\"${LSP_PLUGIN}\": true}}" > "$settings_file"
+            echo "  lsp    → enabled ${LSP_PLUGIN} (created settings.json)" >&2
+        fi
+    elif [ -n "${LSP_BINARY:-}" ]; then
+        echo "  lsp    → no Claude Code plugin; ensure '${LSP_BINARY}' is installed" >&2
+    fi
 
     echo "discover: ${SKILL_LANG_NAME}" >&2
     echo "  script → $script_dir/discover.sh" >&2

@@ -7,6 +7,10 @@ FILE_EXCLUDE_GLOBS=""
 SRC_DIR_REL="lib"
 ENTRY_POINT_REL=""  # set per-project, e.g. "lib/myapp.rb"
 PACKAGE_NAME=""
+CTX7_LIBRARIES="ruby"
+LSP_PLUGIN="ruby-lsp@claude-plugins-official"
+LSP_BINARY="ruby-lsp"
+LSP_INSTALL="gem install ruby-lsp"
 
 # ─────────────────────────────────────────────────────────
 # Skill metadata — used by `discover init` to fill SKILL.md.template

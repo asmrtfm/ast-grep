@@ -7,6 +7,10 @@ FILE_EXCLUDE_GLOBS=""
 SRC_DIR_REL="."
 ENTRY_POINT_REL=""  # set per-project
 PACKAGE_NAME=""
+CTX7_LIBRARIES="bash"
+LSP_PLUGIN=""  # no official Claude Code plugin
+LSP_BINARY="bash-language-server"
+LSP_INSTALL="npm install -g bash-language-server"
 
 # ─────────────────────────────────────────────────────────
 # Skill metadata — used by `discover init` to fill SKILL.md.template
