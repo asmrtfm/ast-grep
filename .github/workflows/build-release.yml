@@ -1,0 +1,80 @@
+name: Build Release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  tag:
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Generate version tag
+        id: version
+        run: |
+          DATE=$(date -u +%Y%m%d)
+          COUNT=$(git tag -l "v${DATE}.*" | wc -l)
+          TAG="v${DATE}.$((COUNT + 1))"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+      - name: Create tag
+        run: |
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+  build:
+    needs: tag
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: Package (Linux)
+        if: contains(matrix.target, 'linux')
+        run: |
+          cd target/${{ matrix.target }}/release
+          zip ast-grep-${{ matrix.target }}.zip ast-grep sg
+      - name: Package (Windows)
+        if: contains(matrix.target, 'windows')
+        shell: bash
+        run: |
+          cd target/${{ matrix.target }}/release
+          7z a ast-grep-${{ matrix.target }}.zip ast-grep.exe sg.exe
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ast-grep-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/ast-grep-${{ matrix.target }}.zip
+
+  release:
+    needs: [tag, build]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.tag.outputs.version }}
+          name: ${{ needs.tag.outputs.version }}
+          generate_release_notes: true
+          files: artifacts/*.zip
