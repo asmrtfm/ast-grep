@@ -1,18 +1,25 @@
+# Static build configuration for portable binary packaging.
+# musl targets produce fully static binaries; macOS/Windows use platform conventions.
+
+[target.x86_64-unknown-linux-musl]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.aarch64-unknown-linux-musl]
+linker = "aarch64-linux-gnu-gcc"
+rustflags = ["-C", "target-feature=+crt-static", "-C", "linker=aarch64-linux-gnu-gcc"]
+
+# macOS: system libs are always dynamically linked; static CRT is not applicable.
+# The resulting binary is portable across macOS versions.
+
+# Windows MSVC: statically link the C runtime so no vcredist dependency.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
 [target.aarch64-unknown-linux-gnu]
 linker = "aarch64-linux-gnu-gcc"
 
 [target.armv7-unknown-linux-gnueabihf]
 linker = "arm-linux-gnueabihf-gcc"
-
-[target.x86_64-unknown-linux-musl]
-rustflags = [
-  "-C",
-  "target-feature=-crt-static",
-]
-
-[target.aarch64-unknown-linux-musl]
-linker = "aarch64-linux-musl-gcc"
-rustflags = ["-C", "target-feature=-crt-static"]
 
 [alias]
 xtask = "run --manifest-path ./xtask/Cargo.toml --"

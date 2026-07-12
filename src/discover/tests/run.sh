@@ -2,8 +2,8 @@
 # run.sh — run all discover framework tests.
 #
 # Usage:
-#   bash src/discover/tests/run.sh           # run all
-#   bash src/discover/tests/run.sh dart bash  # run specific languages
+#   bash tests/run.sh           # run all
+#   bash tests/run.sh dart bash  # run specific languages
 
 set -euo pipefail
 

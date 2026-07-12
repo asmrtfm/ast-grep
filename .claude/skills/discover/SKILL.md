@@ -13,7 +13,7 @@ When the user says anything like:
 ## Prerequisites
 
 - ast-grep and jq installed
-- This repo checked out at `src/discover/`
+- This repo checked out at ``
 
 ## Process overview
 
@@ -94,7 +94,7 @@ Cross-check against the existing lang configs — if your new language's `resolv
 Copy the template and fill it in based on what you discovered in step 1:
 
 ```bash
-cp src/discover/lang-template.sh src/discover/langs/<lang>.sh
+cp lib/lang-template.sh langs/<lang>.sh
 ```
 
 Required variables — see existing configs for examples:
@@ -126,7 +126,7 @@ Skill metadata — used by `discover init` to render SKILL.md:
 
 ### Step 3: Add auto-detection to init.sh
 
-Add a `detect_<lang>()` function to `src/discover/init.sh` that reads the project's manifest file to auto-detect entry point and package name. Pattern:
+Add a `detect_<lang>()` function to `lib/init.sh` that reads the project's manifest file to auto-detect entry point and package name. Pattern:
 
 ```bash
 detect_<lang>() {
@@ -140,7 +140,7 @@ See existing `detect_dart`, `detect_crystal`, `detect_ruby`, `detect_swift` for 
 
 ### Step 4: Write the test suite
 
-Create a test file at `src/discover/tests/test-<lang>.sh` and a fixture at `src/discover/tests/fixtures/<lang>.<ext>`.
+Create a test file at `tests/test-<lang>.sh` and a fixture at `tests/fixtures/<lang>.<ext>`.
 
 The fixture is the representative code from step 1 — **it is committed, not a tmp file.**
 
@@ -175,8 +175,8 @@ See existing tests for the pattern. Every lang config must have a passing test s
 ### Step 5: Run the test suite
 
 ```bash
-bash src/discover/tests/run.sh <lang>     # single language
-bash src/discover/tests/run.sh            # all languages
+bash tests/run.sh <lang>     # single language
+bash tests/run.sh            # all languages
 ```
 
 All tests must pass.
@@ -266,22 +266,22 @@ After the Rust side works, follow Path A steps 1-6 to create the discover lang c
 
 | File | Purpose |
 |------|---------|
-| `src/discover/lang-template.sh` | Blank lang config with full documentation |
-| `src/discover/langs/dart.sh` | Complex: 3 directives, package imports, codegen exclusions |
-| `src/discover/langs/crystal.sh` | Complex: glob requires, shard resolution, macros |
-| `src/discover/langs/ruby.sh` | Medium: require + require_relative, singleton methods |
-| `src/discover/langs/swift.sh` | Module-based imports, universal class_declaration kind |
-| `src/discover/langs/bash.sh` | source/dot directives, three function forms |
-| `src/discover/langs/typescript.sh` | import/export, extensionless resolution, namespace/const/let |
-| `src/discover/core.sh` | Shared engine — do not modify for language-specific logic |
-| `src/discover/init.sh` | Init command — add `detect_<lang>()` here |
-| `src/discover/generate.sh` | Concatenates lang config + core into standalone script |
-| `src/discover/tests/harness.sh` | Shared test helpers (assert_eq, assert_contains, etc.) |
-| `src/discover/tests/run.sh` | Test runner — runs all or selected language tests |
-| `src/discover/tests/test-<lang>.sh` | Per-language test suites |
-| `src/discover/tests/fixtures/<lang>.<ext>` | Committed test fixtures with representative code |
-| `src/discover/SKILL.md.template` | Template for project-level SKILL.md |
-| `src/discover/test-discover.sh.template` | Template for project-level smoke tests |
+| `lib/lang-template.sh` | Blank lang config with full documentation |
+| `langs/dart.sh` | Complex: 3 directives, package imports, codegen exclusions |
+| `langs/crystal.sh` | Complex: glob requires, shard resolution, macros |
+| `langs/ruby.sh` | Medium: require + require_relative, singleton methods |
+| `langs/swift.sh` | Module-based imports, universal class_declaration kind |
+| `langs/bash.sh` | source/dot directives, three function forms |
+| `langs/typescript.sh` | import/export, extensionless resolution, namespace/const/let |
+| `lib/core.sh` | Shared engine — do not modify for language-specific logic |
+| `lib/init.sh` | Init command — add `detect_<lang>()` here |
+| `lib/generate.sh` | Concatenates lang config + core into standalone script |
+| `tests/harness.sh` | Shared test helpers (assert_eq, assert_contains, etc.) |
+| `tests/run.sh` | Test runner — runs all or selected language tests |
+| `tests/test-<lang>.sh` | Per-language test suites |
+| `tests/fixtures/<lang>.<ext>` | Committed test fixtures with representative code |
+| `SKILL.md.template` | Template for project-level SKILL.md |
+| `test-discover.sh.template` | Template for project-level smoke tests |
 | `crates/language/src/dart.rs` | Reference custom Language impl (Rust, for Path B) |
 
 ## Rules
@@ -289,6 +289,6 @@ After the Rust side works, follow Path A steps 1-6 to create the discover lang c
 - **Never guess AST node kinds.** Test every kind against real code before using it.
 - **Fixtures are committed, not tmp files.** Create `tests/fixtures/<lang>.<ext>` with representative code.
 - **Every lang config must have a passing test suite** in `tests/test-<lang>.sh` before generating.
-- **Run the full test suite** (`bash src/discover/tests/run.sh`) before committing.
+- **Run the full test suite** (`bash tests/run.sh`) before committing.
 - **Always add `detect_<lang>()`** to init.sh so `discover init` works without flags.
 - **Always generate the standalone script** in `examples/discover-<lang>.sh`.

@@ -24,7 +24,7 @@ text search."
 ## Architecture
 
 ```
-src/discover/
+
 ├── README.md               ← this file
 ├── core.sh                 ← shared engine (BFS, caching, CLI dispatch)
 ├── generate.sh             ← assembles a standalone discover.sh
@@ -206,7 +206,7 @@ you won't get hits in dead code.
 ## Generating a standalone discover.sh
 
 ```bash
-bash src/discover/generate.sh <lang-config> [--output <path>] [--entry <file>] [--package <name>] [--src-dir <dir>]
+bash lib/generate.sh <lang-config> [--output <path>] [--entry <file>] [--package <name>] [--src-dir <dir>]
 ```
 
 The generator concatenates the lang config and core engine into a single
@@ -215,18 +215,18 @@ time:
 
 ```bash
 # Dart project
-bash src/discover/generate.sh src/discover/langs/dart.sh \
+bash lib/generate.sh langs/dart.sh \
   --output scripts/discover.sh \
   --package my_app \
   --entry lib/main.dart
 
 # Crystal project
-bash src/discover/generate.sh src/discover/langs/crystal.sh \
+bash lib/generate.sh langs/crystal.sh \
   --output tools/discover.sh \
   --entry src/myapp.cr
 
 # Swift SPM project
-bash src/discover/generate.sh src/discover/langs/swift.sh \
+bash lib/generate.sh langs/swift.sh \
   --output scripts/discover.sh \
   --src-dir Sources
 ```
@@ -236,7 +236,7 @@ bash src/discover/generate.sh src/discover/langs/swift.sh \
 ### Step 1: Copy the template
 
 ```bash
-cp src/discover/lang-template.sh src/discover/langs/<lang>.sh
+cp lib/lang-template.sh langs/<lang>.sh
 ```
 
 ### Step 2: Fill in the config
@@ -326,7 +326,7 @@ Override these only when the language needs non-default behavior:
 
 ```bash
 # Generate
-bash src/discover/generate.sh src/discover/langs/<lang>.sh \
+bash lib/generate.sh langs/<lang>.sh \
   --output /path/to/project/scripts/discover.sh \
   --entry <entry-point>
 
