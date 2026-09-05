@@ -36,10 +36,11 @@ impl Language for Dart {
     // MISSING nodes, try wrapping in a function body instead.
     if self.should_try_wrapping(src) {
       if let Some(pattern) = self.try_wrapped_pattern(src) {
-        return Ok(pattern);
+        return Ok(self.fix_bare_identifier_kind(pattern));
       }
     }
-    builder.build(|s| StrDoc::try_new(s, *self))
+    let pattern = builder.build(|s| StrDoc::try_new(s, *self))?;
+    Ok(self.fix_bare_identifier_kind(pattern))
   }
 }
 /// Dart keywords that begin statements but are not valid function/type names.
@@ -54,6 +55,29 @@ const DART_STATEMENT_KEYWORDS: &[&str] = &[
 const DART_CLASS_MEMBER_KEYWORDS: &[&str] = &["static", "covariant", "external", "abstract"];
 
 impl Dart {
+  /// Bare identifier patterns (e.g. `DividerWidget`) parse as kind
+  /// `identifier`, but Dart constructors (`const DividerWidget()`) and
+  /// type annotations use `type_identifier`. Set `alt_kind_id` so the
+  /// pattern matches both: `identifier` for non-const constructors
+  /// (`ProfilePage(`), `type_identifier` for const constructors
+  /// (`const DividerWidget()`) and type annotations.
+  fn fix_bare_identifier_kind(&self, mut pattern: Pattern) -> Pattern {
+    let identifier_id = self.kind_to_id("identifier");
+    let type_identifier_id = self.kind_to_id("type_identifier");
+    if let PatternNode::Terminal {
+      kind_id,
+      is_named,
+      alt_kind_id,
+      ..
+    } = &mut pattern.node
+    {
+      if *is_named && *kind_id == identifier_id {
+        *alt_kind_id = Some(type_identifier_id);
+      }
+    }
+    pattern
+  }
+
   /// Decides whether the direct (top-level) parse is likely wrong and
   /// wrapping should be attempted.  Four independent signals:
   ///  1. Root node itself is ERROR (total misparse)
@@ -353,6 +377,43 @@ mod test {
     test_match(
       "static final String $FIELD = $VALUE",
       "class Foo { static final String bar = \"hello\"; }",
+    );
+  }
+
+  #[test]
+  fn test_dart_bare_identifier_matches_both_identifier_kinds() {
+    // const constructor — grammar produces `type_identifier`
+    test_match(
+      "DividerWidget",
+      "class Foo { Widget build() { return const DividerWidget(); } }",
+    );
+    // non-const constructor in a multi-line call — grammar produces
+    // `identifier`. Mirrors the real-world pattern:
+    //   rootNavigator.push(CupertinoPageRoute(
+    //     builder: (_) => ProfilePage(
+    //       profile: Profile(...),
+    //     ),
+    //   ));
+    test_match(
+      "ProfilePage",
+      r#"void f() {
+        navigator.push(CupertinoPageRoute(
+          builder: (_) => ProfilePage(
+            profile: Profile(
+              id: "abc",
+            ),
+          ),
+        ));
+      }"#,
+    );
+    // type annotation — grammar produces `type_identifier`
+    test_match(
+      "DividerWidget",
+      "void f(DividerWidget w) {}",
+    );
+    test_non_match(
+      "DividerWidget",
+      "void f() { var x = OtherWidget(); }",
     );
   }
 

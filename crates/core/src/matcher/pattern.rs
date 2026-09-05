@@ -101,6 +101,7 @@ fn dump_pattern_impl<'p>(
       text,
       kind_id,
       is_named,
+      ..
     } => {
       if !*is_named {
         if matches!(
@@ -163,6 +164,13 @@ pub enum PatternNode {
     text: String,
     is_named: bool,
     kind_id: u16,
+    /// Some tree-sitter grammars assign different kind IDs to the same
+    /// token depending on syntactic position. Dart uses `identifier` for
+    /// value refs (`ProfilePage(`) and `type_identifier` for const
+    /// constructors (`const DividerWidget()`) and type annotations.
+    /// When set, `match_terminal` accepts either kind so a single
+    /// pattern finds both usages.
+    alt_kind_id: Option<u16>,
   },
   /// Non-Terminal Syntax Nodes are called Internal
   Internal {
@@ -223,6 +231,7 @@ fn convert_node_to_pattern<D: Doc>(node: Node<'_, D>) -> PatternNode {
       text: node.text().to_string(),
       is_named: node.is_named(),
       kind_id: node.kind_id(),
+      alt_kind_id: None,
     }
   } else {
     let children = node.children().filter_map(|n| {
@@ -410,20 +419,26 @@ impl Matcher for Pattern {
     if matches!(self.strictness, MatchStrictness::Template) {
       return None;
     }
-    let kind = match self.node {
-      PatternNode::Terminal { kind_id, .. } => kind_id,
-      PatternNode::MetaVar { .. } => self.root_kind?,
+    let (kind, alt) = match &self.node {
+      PatternNode::Terminal {
+        kind_id,
+        alt_kind_id,
+        ..
+      } => (*kind_id, *alt_kind_id),
+      PatternNode::MetaVar { .. } => (self.root_kind?, None),
       PatternNode::Internal { kind_id, .. } => {
-        if kind_utils::is_error_kind(kind_id) {
-          // error can match any kind
+        if kind_utils::is_error_kind(*kind_id) {
           return None;
         }
-        kind_id
+        (*kind_id, None)
       }
     };
 
     let mut kinds = BitSet::new();
     kinds.insert(kind.into());
+    if let Some(alt) = alt {
+      kinds.insert(alt.into());
+    }
     Some(kinds)
   }
 

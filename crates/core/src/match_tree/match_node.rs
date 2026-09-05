@@ -18,7 +18,8 @@ pub(super) fn match_node_impl<'tree, D: Doc>(
       text,
       kind_id,
       is_named,
-    } => match strictness.match_terminal(*is_named, text, *kind_id, candidate) {
+      alt_kind_id,
+    } => match strictness.match_terminal(*is_named, text, *kind_id, *alt_kind_id, candidate) {
       MatchOneNode::MatchedBoth => {
         if agg.match_terminal(candidate).is_some() {
           MatchOneNode::MatchedBoth

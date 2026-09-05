@@ -60,11 +60,13 @@ impl MatchStrictness {
     is_named: bool,
     text: &str,
     goal_kind: u16,
+    alt_kind_id: Option<u16>,
     candidate: &Node<impl Doc>,
   ) -> MatchOneNode {
     use MatchStrictness as M;
     let cand_kind = candidate.kind_id();
-    let is_kind_matched = kind_utils::are_kinds_matching(goal_kind, cand_kind);
+    let is_kind_matched = kind_utils::are_kinds_matching(goal_kind, cand_kind)
+      || alt_kind_id.is_some_and(|alt| kind_utils::are_kinds_matching(alt, cand_kind));
     // work around ast-grep/ast-grep#1419 and tree-sitter/tree-sitter-typescript#306
     // tree-sitter-typescript has wrong span of unnamed node so text would not match
     // just compare kind for unnamed node
