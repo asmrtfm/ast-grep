@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-[[ "${1,,}" != *(\-)@(h)?(elp) ]] || { cat <<EOL
+[[ "${1,,}" != @(+(\-)h?(elp)|help) ]] || { cat <<EOL
 USAGE
         ./install [ -b|--build ]
 
@@ -12,7 +12,7 @@ EOL
   exit 0
 }
 
-[[ "${1,,}" != *(\-)@(b)?(uild) ]] || cargo build --release
+[[ "${1,,}" != @(+(\-)b?(uild)|build) ]] || cargo build --release
 
 cp ./target/release/ast-grep ~/.cargo/bin/ast-grep
 cp ./target/release/sg ~/.cargo/bin/sg
